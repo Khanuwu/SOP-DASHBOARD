@@ -3,53 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>Dashboard Producción</title>
-
   <!-- Estilos -->
   <link rel="stylesheet" href="style.css">
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+<h1>Dashboard Producción – Máquinas</h1>
 
-  <h1>Dashboard Producción – Tiempo Real</h1>
+<div class="machine-grid" id="contenedor-maquinas"></div>
 
-  <!-- KPIs -->
-  <div class="cards">
-    <div class="card">
-      <h3>Total Unidades</h3>
-      <p id="kpi-unidades">0</p>
-    </div>
-    <div class="card">
-      <h3>Máquinas activas</h3>
-      <p id="kpi-maquinas">0</p>
-    </div>
-  </div>
-
-<div class="tabs">
-<button class="tab active" onclick="cambiarTipo('EF 320', this)">EF 320</button>
-<button class="tab" onclick="cambiarTipo('EF 410', this)">EF 410</button>
-</div>
-
-<div id="contenedor-maquinas" class="machine-grid"></div>
-
-  <!-- Tabla -->
-  <table id="tabla">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Máquina</th>
-        <th>Unidades</th>
-        <th>Última falla</th>
-        <th>Tiempo producido</th>
-        <th>Turno</th>
-        <th>Timestamp</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <!-- JS -->
 <script src="chart.js"></script>
 <script src="app.js"></script>
 

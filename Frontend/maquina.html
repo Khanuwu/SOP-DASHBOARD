@@ -1,9 +1,94 @@
-<h1 id="titulo-maquina"></h1>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalle Máquina</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+<a href="index.html" class="btn-volver">← Volver al dashboard</a>
+
+<h1 id="titulo-maquina">Máquina</h1>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <span>Unidades</span>
+    <strong id="kpi-unidades">0</strong>
+  </div>
+
+  <div class="kpi-card">
+    <span>Turno</span>
+    <strong id="kpi-turno">-</strong>
+  </div>
+
+  <div class="kpi-card">
+    <span>Última falla</span>
+    <strong id="kpi-falla">-</strong>
+  </div>
+</div>
+
+<!-- CARD PRODUCCIÓN + OEE -->
+<div class="detalle produccion-oee-card">
+
+  <h3>Producción semanal</h3>
+
+<div class="produccion-oee-content">
+
+  <!-- GRÁFICO (sub-card) -->
+  <div class="sub-card produccion-panel">
+    <canvas id="grafico-produccion"></canvas>
+  </div>
+
+  <!-- OEE (sub-card) -->
+  <div class="sub-card oee-panel">
+    <h4 class="panel-title">OEE</h4>
+
+    <div class="oee-grid">
+      <div class="oee-card">
+        <span>Disponibilidad</span>
+        <strong id="oee-disponibilidad">0%</strong>
+      </div>
+
+      <div class="oee-card">
+        <span>Rendimiento</span>
+        <strong id="oee-rendimiento">0%</strong>
+      </div>
+
+      <div class="oee-card">
+        <span>Calidad</span>
+        <strong id="oee-calidad">100%</strong>
+      </div>
+
+      <div class="oee-card total">
+        <span>Total</span>
+        <strong id="oee-total">0%</strong>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<!-- HISTORIAL -->
 <div class="detalle">
-  <div id="info-maquina"></div>
-  <canvas id="grafico-produccion"></canvas>
+  <h3>Historial reciente</h3>
+  <table class="tabla-historial">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Unidades</th>
+        <th>Falla</th>
+        <th>Turno</th>
+      </tr>
+    </thead>
+    <tbody id="historial-body"></tbody>
+  </table>
 </div>
 
 <script src="chart.js"></script>
 <script src="maquina.js"></script>
+</body>
+</html>
