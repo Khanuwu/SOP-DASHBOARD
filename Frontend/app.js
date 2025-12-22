@@ -2,66 +2,74 @@ const API_URL = "http://192.168.137.116:8000/api/produccion";
 const WS_URL  = "ws://192.168.137.116:8000/ws";
 
 let socket = null;
+let datosGlobales = [];
 
-/* =========================
-   Cargar datos (HTTP)
-   ========================= */
+/******************************
+ * CARGA DATOS
+ ******************************/
 async function cargarDatos() {
-    try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-
-        const tbody = document.querySelector("#tabla tbody");
-        tbody.innerHTML = "";
-
-        data.forEach(row => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${row.id}</td>
-                <td>${row.nombre_maquina}</td>
-                <td>${row.unidades_producidas}</td>
-                <td>${row.ultima_falla}</td>
-                <td>${row.tiempo_producido}</td>
-                <td>${row.turno}</td>
-                <td>${row.timestamp}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-    } catch (e) {
-        console.error("Error cargando datos:", e);
-    }
+  const res = await fetch(API_URL);
+  datosGlobales = await res.json();
+  renderizarTarjetas();
 }
 
-/* =========================
-   WebSocket (Tiempo real)
-   ========================= */
+/******************************
+ * ESTADO INDUSTRIAL
+ ******************************/
+function obtenerEstado(maquina) {
+  if (maquina.ultima_falla && maquina.ultima_falla !== "Sin falla") {
+    return "estado-fault";
+  }
+  if (maquina.unidades_producidas === 0) {
+    return "estado-stop";
+  }
+  return "estado-run";
+}
+
+/******************************
+ * TARJETAS
+ ******************************/
+function renderizarTarjetas() {
+  const contenedor = document.getElementById("contenedor-maquinas");
+  contenedor.innerHTML = "";
+
+  datosGlobales.forEach(maquina => {
+    const card = document.createElement("div");
+    card.className = `machine-card ${obtenerEstado(maquina)}`;
+
+    card.onclick = () => {
+      // 👉 Navegamos a la página detalle
+      window.location.href =
+        `maquina.html?id=${maquina.id}`;
+    };
+
+    card.innerHTML = `
+      <h3>${maquina.nombre_maquina}</h3>
+      <div>Unidades: <b>${maquina.unidades_producidas}</b></div>
+      <div>Estado: ${maquina.ultima_falla || "RUN"}</div>
+      <div class="small">${maquina.turno}</div>
+    `;
+
+    contenedor.appendChild(card);
+  });
+}
+
+/******************************
+ * WEBSOCKET
+ ******************************/
 function conectarWebSocket() {
-    socket = new WebSocket(WS_URL);
+  socket = new WebSocket(WS_URL);
 
-    socket.onopen = () => {
-        console.log("WebSocket conectado");
-    };
-
-    socket.onmessage = (event) => {
-        console.log("Evento WS:", event.data);
-
-        // Cada vez que llega un evento, recargamos datos
-        cargarDatos();
-    };
-
-    socket.onerror = (err) => {
-        console.error("Error WebSocket", err);
-    };
-
-    socket.onclose = () => {
-        console.warn("WebSocket cerrado, reconectando en 3s...");
-        setTimeout(conectarWebSocket, 3000);
-    };
+  socket.onmessage = () => cargarDatos();
+  socket.onopen = () => console.log("WebSocket conectado");
+  socket.onclose = () => setTimeout(conectarWebSocket, 3000);
 }
 
-/* =========================
-   Inicio
-   ========================= */
-cargarDatos();          // Primera carga
-conectarWebSocket();    // Tiempo real
+/******************************
+ * INICIO
+ ******************************/
+document.addEventListener("DOMContentLoaded", () => {
+  cargarDatos();
+  conectarWebSocket();
+});
+
