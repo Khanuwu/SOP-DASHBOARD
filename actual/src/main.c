@@ -27,6 +27,12 @@ int main(void){
     // si conecta escribe este mensaje
     printf("DB CONEXION OK\n");
 
+    while(1) {
+        db_exec(&db,
+        "INSERT INTO hearbeat(ts) VALUES (NOW())"
+    );
+    sleep(1);
+    }
     //despues de conectar y pedir lo que necesita cierra
     if (db.conn){
         db_close(&db);

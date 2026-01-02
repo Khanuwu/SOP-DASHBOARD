@@ -12,7 +12,6 @@ void db_close(DBContext *db)
 }
 
 
-
 int db_connect(DBContext *db, const DBConfig *cfg){
     if (db == NULL){
     return -1;
@@ -26,6 +25,17 @@ int db_connect(DBContext *db, const DBConfig *cfg){
         db->connected = 0;
     return -1;
     }
+
+    unsigned int t;
+
+    t = cfg->connect_timeout;
+    mysql_options(db->conn, MYSQL_OPT_CONNECT_TIMEOUT, &t);
+
+    t = cfg->read_timeout;
+    mysql_options(db->conn, MYSQL_OPT_READ_TIMEOUT, &t);
+
+    t = cfg->write_timeout;
+    mysql_options(db->conn, MYSQL_OPT_WRITE_TIMEOUT, &t);
 
     if (!mysql_real_connect(
             db->conn,
@@ -78,3 +88,16 @@ int db_connect(DBContext *db, const DBConfig *cfg){
     return 0;
 }
 
+
+int db_exec(DBContext *db, const char *sql){
+    if (!db || !db->conn || !sql){
+        return -1;
+    }
+
+    if (mysql_query(db->conn, sql) != 0){
+        snprintf(db->last_error, sizeof(db->last_error),
+        "mysql_query failed: %s", mysql_error(db->conn));
+    return -1;
+    }
+    return 0;
+}
