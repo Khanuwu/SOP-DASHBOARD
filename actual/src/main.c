@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "config.h"
 #include "db.h"
+#include <windows.h>
 
 
 int main(void){
@@ -17,22 +18,32 @@ int main(void){
     // carga valores para conexion a db 
     if (config_load("config.init", &cfg)!= 0){
         printf("error cargando config.ini\n");
-        return 1;
+    return 1;
     }
+
     // intenta conectar a db
     if (db_connect(&db, &cfg) != 0){
         printf("DB ERROR:%s\n", db.last_error);
         return 1;
     }
+    
     // si conecta escribe este mensaje
     printf("DB CONEXION OK\n");
 
     while(1) {
-        db_exec(&db,
-        "INSERT INTO hearbeat(ts) VALUES (NOW())"
-    );
-    sleep(1);
+        if (db_exec(&db, "INSERT INTO hearbeat(ts) VALUES (NOW())") != 0) {
+            printf("DB EXEC ERROR: %s\n", db.last_error);
+            // opcional: intentar reconectar
+            db_close(&db);
+            Sleep(2000);
+
+            if (db_connect(&db, &cfg) != 0) {
+                printf("RECONNECT FAILED: %s\n", db.last_error);
+                Sleep(5000);
+            }
+        }
     }
+
     //despues de conectar y pedir lo que necesita cierra
     if (db.conn){
         db_close(&db);

@@ -3,9 +3,6 @@
 #include <mysql/mysql.h>
 #include "config.h"
 
-
-
-
 typedef struct{
     MYSQL *conn; //conexion con maria db  /////////////
     int connected; // 0=no, 1=si          ////////////////  DEBUG
@@ -16,7 +13,7 @@ int db_connect(DBContext *db, const DBConfig *cfg);
 
 void db_close(DBContext *db);
 
-int db_exec(DBContext *db, const char *sql)
+int db_exec(DBContext *db, const char *sql);
 
 
 #endif // DB_H
