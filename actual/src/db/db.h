@@ -15,5 +15,8 @@ void db_close(DBContext *db);
 
 int db_exec(DBContext *db, const char *sql);
 
+int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts);
+
+
 
 #endif // DB_H

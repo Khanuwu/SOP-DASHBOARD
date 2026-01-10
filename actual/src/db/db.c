@@ -1,5 +1,6 @@
 #include "db.h"
 #include "stdio.h"
+#include "string.h"
 #include <mysql/mysql.h>
 
 
@@ -107,3 +108,26 @@ int db_exec(DBContext *db, const char *sql)
     return 0;
 }
 
+int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts)
+{
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+
+    if (mysql_query(db->conn, sql) != 0)
+        return -1;
+
+    res = mysql_store_result(db->conn);
+    if (!res)
+        return -1;
+
+    row = mysql_fetch_row(res);
+    if (!row || !row[0]) {
+        mysql_free_result(res);
+        return -1;
+    }
+
+    *out_ts = (time_t)atoll(row[0]);
+
+    mysql_free_result(res);
+    return 0;
+}
