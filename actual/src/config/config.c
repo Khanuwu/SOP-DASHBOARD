@@ -86,6 +86,7 @@ int config_load(const char *path, DBConfig *cfg)
     if (cfg->host[0] == '\0') return -1;
     if (cfg->port <= 0) return -1;
     if (cfg->user[0] == '\0') return -1;
+    if (cfg->password[0] == '\0') return -1;
     if (cfg->database[0] == '\0') return -1;
 
     printf("CFG host='%s'\n", cfg->host);
