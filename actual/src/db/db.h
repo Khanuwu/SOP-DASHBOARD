@@ -17,6 +17,7 @@ int db_exec(DBContext *db, const char *sql);
 
 int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts);
 
+int db_insert_alarm(DBContext *db, int codigo, const char *descripcion);
 
 
 #endif // DB_H

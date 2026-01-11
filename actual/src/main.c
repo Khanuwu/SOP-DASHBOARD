@@ -97,12 +97,11 @@ int main(void)
             printf("HEARTBEAT RECOVERED\n");
             alarm_active = 0;
 
-            db_exec(&db,
-                "DELETE FROM alarmas_activas WHERE codigo = 1001"
-            );
+            db_insert_alarm(&db, 1001, "Heartbeat perdido");
         }
 
         Sleep(1000);
+
     }
 
     /* Nunca llega aquí, pero queda correcto */

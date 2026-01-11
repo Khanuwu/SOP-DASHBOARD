@@ -31,6 +31,12 @@ int db_connect(DBContext *db, const DBConfig *cfg){
     unsigned int connect_timeout =
     (cfg && cfg->connect_timeout > 0) ? (unsigned int)cfg->connect_timeout : 10;
 
+    if (cfg && cfg->ssl_ca[0] !='\0'){
+        const char *ssl_key = cfg->ssl_key[0] != '\0' ? cfg->ssl_key :NULL;
+        const char *ssl_cert = cfg->ssl_cert[0] != '\0' ? cfg->ssl_cert : NULL;
+        mysql_ssl_set(db->conn, ssl_key, ssl_cert, cfg->ssl_ca, NULL, NULL);
+    }
+
     if (!mysql_real_connect(
             db->conn,
             cfg->host,
@@ -130,5 +136,62 @@ int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts)
     *out_ts = (time_t)atoll(row[0]);
 
     mysql_free_result(res);
+    return 0;
+}
+
+int db_insert_alarm(DBContext *db, int codigo, const char *descripcion)
+{
+    if (!db || !db->conn || !descripcion) {
+        return -1;
+    }
+
+    const char *sql =
+        "INSERT INTO alarmas_activas (codigo, descripcion, ts) "
+        "VALUES (?, ?, NOW())";
+    MYSQL_STMT *stmt = mysql_stmt_init(db->conn);
+    if (!stmt) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_init failed");
+        return -1;
+    }
+
+    if (mysql_stmt_prepare(stmt, sql, (unsigned long)strlen(sql)) != 0) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_prepare failed: %s",
+                 mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    MYSQL_BIND bind[2];
+    memset(bind, 0, sizeof(bind));
+    long codigo_param = (long)codigo;
+    unsigned long desc_len = (unsigned long)strlen(descripcion);
+
+    bind[0].buffer_type = MYSQL_TYPE_LONG;
+    bind[0].buffer = &codigo_param;
+
+    bind[1].buffer_type = MYSQL_TYPE_STRING;
+    bind[1].buffer = (char *)descripcion;
+    bind[1].buffer_length = desc_len;
+    bind[1].length = &desc_len;
+
+    if (mysql_stmt_bind_param(stmt, bind) != 0) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_bind_param failed: %s",
+                 mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    if (mysql_stmt_execute(stmt) != 0) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_execute failed: %s",
+                 mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    mysql_stmt_close(stmt);
     return 0;
 }

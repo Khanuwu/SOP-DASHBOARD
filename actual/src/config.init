@@ -1,8 +1,11 @@
 host=192.168.137.116
 port=3306
 user=appuser
-password=appuser$$2005
+password=
 database=produccion
+ssl_ca=
+ssl_cert=
+ssl_key=
 connect_timeout_sec=3
 read_timeout_sec=5
 write_timeout_sec=5
