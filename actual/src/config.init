@@ -1,7 +1,7 @@
 host=192.168.137.116
 port=3306
 user=appuser
-password=
+password=appuser$$2005
 database=produccion
 ssl_ca=
 ssl_cert=

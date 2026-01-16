@@ -9,6 +9,16 @@ typedef struct{
     char last_error[256]; // ultimo error registrado ///
 }DBContext;
 
+typedef enum {
+    DB_OK = 0,
+    DB_ERR_PARAM = -1,
+    DB_ERR_STMT_INIT = -2,
+    DB_ERR_STMT_PREPARE = -3,
+    DB_ERR_STMT_BIND = -4,
+    DB_ERR_STMT_EXEC = -5
+} DBResult;
+
+
 int db_connect(DBContext *db, const DBConfig *cfg);
 
 void db_close(DBContext *db);

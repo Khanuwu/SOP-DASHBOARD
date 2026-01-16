@@ -133,6 +133,9 @@ int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts)
         return -1;
     }
 
+    if (!db || !db->conn || !out_ts)
+    return -1;
+
     *out_ts = (time_t)atoll(row[0]);
 
     mysql_free_result(res);
@@ -141,7 +144,7 @@ int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts)
 
 int db_insert_alarm(DBContext *db, int codigo, const char *descripcion)
 {
-    if (!db || !db->conn || !descripcion) {
+    if (!db || !db->conn || !db->connected || !descripcion) {
         return -1;
     }
 
@@ -165,16 +168,25 @@ int db_insert_alarm(DBContext *db, int codigo, const char *descripcion)
 
     MYSQL_BIND bind[2];
     memset(bind, 0, sizeof(bind));
+
     long codigo_param = (long)codigo;
     unsigned long desc_len = (unsigned long)strlen(descripcion);
 
     bind[0].buffer_type = MYSQL_TYPE_LONG;
-    bind[0].buffer = &codigo_param;
+    bind[0].buffer      = (void *)&codigo_param;
+    bind[0].is_null     = 0;
 
-    bind[1].buffer_type = MYSQL_TYPE_STRING;
-    bind[1].buffer = (char *)descripcion;
+    bind[1].buffer_type   = MYSQL_TYPE_STRING;
+    bind[1].buffer        = (void *)descripcion;
     bind[1].buffer_length = desc_len;
-    bind[1].length = &desc_len;
+    bind[1].length        = &desc_len;
+    bind[1].is_null       = 0;
+
+    if (strlen(descripcion) >= 255) {
+    snprintf(db->last_error, sizeof(db->last_error),
+             "descripcion too long");
+    return -1;
+    }
 
     if (mysql_stmt_bind_param(stmt, bind) != 0) {
         snprintf(db->last_error, sizeof(db->last_error),

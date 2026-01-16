@@ -1,9 +1,8 @@
-/*///////////////////////////////////////////////////////////
-    Inicializa config
-    Inicializa DB
-    Arranca loop principal
-    Maneja heartbeat y alarma con latch
-///////////////////////////////////////////////////////////*/
+    /*//////////////Inicializa config
+                    Inicializa DB
+                    Inicializa OPC UA
+                    Arranca loop principal
+                    Maneja shutdown limpio//////////////////*/
 
 #include <stdio.h>
 #include "config.h"
@@ -11,25 +10,45 @@
 #include <windows.h>
 #include <time.h>
 
+//funcion auxiliar para pasar sql en tiempo 
+
+time_t parse_mysql_ts(const char *ts){
+    struct tm tm = {0};
+
+    //formato Mysql= YYYY-MM-DD HH:MM:SS
+    if(sscanf(ts,"%d-%d-%d %d:%d:%d",
+        &tm.tm_year,
+        &tm.tm_mon,
+        &tm.tm_mday,
+        &tm.tm_hour,
+        &tm.tm_min,
+        &tm.tm_sec) !=6){
+            return(time_t)-1;
+        }
+
+        tm.tm_year -= 1900;
+        tm.tm_mon -= 1;
+
+        return mktime(&tm);
+    }
+
+// funcion principal main
+
 int main(void)
 {
-    DBConfig  cfg = {0};
+    DBConfig cfg = {0};
     DBContext db  = {0};
 
-    time_t hb_age_sec = 0;   // edad del heartbeat en segundos (desde DB)
-    int  alarm_active = 0; // latch de alarma (0 = no activa, 1 = activa)
+    time_t hb_age_sec = 0;
+    double diff_sec;
 
-    /*--------------------------------------------------------
-     1) Cargar configuración
-    --------------------------------------------------------*/
+    /* 1) Cargar configuración */
     if (config_load("config.init", &cfg) != 0) {
         printf("ERROR cargando config.ini\n");
         return 1;
     }
 
-    /*--------------------------------------------------------
-     2) Conectar a la base de datos
-    --------------------------------------------------------*/
+    /* 2) Conectar a la base de datos */
     if (db_connect(&db, &cfg) != 0) {
         printf("DB ERROR: %s\n", db.last_error);
         return 1;
@@ -37,15 +56,10 @@ int main(void)
 
     printf("DB CONEXION OK\n");
 
-    /*--------------------------------------------------------
-     3) Loop principal
-    --------------------------------------------------------*/
+    /* 3) Loop principal */
     while (1) {
 
-        /*----------------------------------------------------
-         3.1 Actualiza heartbeat propio
-         (este proceso mantiene vivo su ID)
-        ----------------------------------------------------*/
+        /* 3.1 Actualiza heartbeat propio (este proceso) */
         if (db_exec(&db,
             "UPDATE hearbeat SET ts = NOW() WHERE id = 1") != 0)
         {
@@ -61,14 +75,10 @@ int main(void)
             continue;
         }
 
-        /*----------------------------------------------------
-         3.2 Lee edad del heartbeat directamente desde MariaDB
-         (la DB es la fuente de tiempo)
-        ----------------------------------------------------*/
+        /* 3.2 Lee edad del heartbeat desde DB (segundos) */
         if (db_query_single_epoch(
                 &db,
-                "SELECT TIMESTAMPDIFF(SECOND, ts, NOW()) "
-                "FROM hearbeat WHERE id = 1",
+                "SELECT TIMESTAMPDIFF(SECOND, ts, NOW()) FROM hearbeat WHERE id = 1",
                 &hb_age_sec
             ) != 0)
         {
@@ -77,31 +87,19 @@ int main(void)
             continue;
         }
 
+        /* 3.3 Calcula edad del heartbeat */
+        diff_sec = (double)hb_age_sec;
 
-        /*----------------------------------------------------
-         3.3 Evaluación de alarma (con latch)
-        ----------------------------------------------------*/
-        if (hb_age_sec > 3 && !alarm_active) {
+        printf("Heartbeat age: %.0f sec\n", diff_sec);
 
+        /* 3.4 Evaluación de alarma */
+        if (diff_sec > 3) {
             printf("ALARM: HEARTBEAT TIMEOUT\n");
-            alarm_active = 1;
-
-            db_exec(&db,
-                "INSERT INTO alarmas_activas (codigo, descripcion, ts) "
-                "VALUES (1001, 'Heartbeat perdido', NOW())"
-            );
-        }
-
-        if (hb_age_sec <= 3 && alarm_active) {
-
-            printf("HEARTBEAT RECOVERED\n");
-            alarm_active = 0;
 
             db_insert_alarm(&db, 1001, "Heartbeat perdido");
         }
 
         Sleep(1000);
-
     }
 
     /* Nunca llega aquí, pero queda correcto */
