@@ -93,7 +93,7 @@ int main(void)
         printf("Heartbeat age: %.0f sec\n", diff_sec);
 
         /* 3.4 Evaluación de alarma */
-        if (diff_sec < 3) {
+        if (diff_sec > 3) {
             printf("ALARM: HEARTBEAT TIMEOUT\n");
 
             db_insert_alarm(&db, 1001, "Heartbeat perdido");

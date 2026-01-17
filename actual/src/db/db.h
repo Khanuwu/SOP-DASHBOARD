@@ -2,6 +2,7 @@
 #define DB_H
 #include <mysql/mysql.h>
 #include "config.h"
+#include "machine/machine.h"
 
 typedef struct{
     MYSQL *conn; //conexion con maria db  /////////////
@@ -28,6 +29,8 @@ int db_exec(DBContext *db, const char *sql);
 int db_query_single_epoch(DBContext *db, const char *sql, time_t *out_ts);
 
 int db_insert_alarm(DBContext *db, int codigo, const char *descripcion);
+
+int db_insert_machine_snapshot(DBContext *db, const MachineSnapshot *snapshot);
 
 
 #endif // DB_H

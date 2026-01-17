@@ -207,3 +207,98 @@ int db_insert_alarm(DBContext *db, int codigo, const char *descripcion)
     mysql_stmt_close(stmt);
     return 0;
 }
+
+// Inserta un snapshot de máquina en la tabla machine_snapshots.
+int db_insert_machine_snapshot(DBContext *db, const MachineSnapshot *snapshot)
+{
+    if (!db || !db->conn || !db->connected || !snapshot) {
+        return -1;
+    }
+
+    const char *sql =
+        "INSERT INTO machine_snapshots "
+        "(state, total_units, good_units, reject_units, alarm_code, alarm_description, alarm_active, ts) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+    MYSQL_STMT *stmt = mysql_stmt_init(db->conn);
+    if (!stmt) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_init failed");
+        return -1;
+    }
+
+    if (mysql_stmt_prepare(stmt, sql, (unsigned long)strlen(sql)) != 0) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_prepare failed: %s",
+                 mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    MYSQL_BIND bind[7];
+    memset(bind, 0, sizeof(bind));
+
+    unsigned char state_param = (unsigned char)snapshot->status.state;
+    unsigned long total_param = (unsigned long)snapshot->counter.total_units;
+    unsigned long good_param = (unsigned long)snapshot->counter.good_units;
+    unsigned long reject_param = (unsigned long)snapshot->counter.reject_units;
+    unsigned short alarm_code_param = (unsigned short)snapshot->alarm.alarm_code;
+    unsigned char alarm_active_param = snapshot->alarm.active ? 1U : 0U;
+    const char *alarm_desc_param = snapshot->alarm.description ? snapshot->alarm.description : "";
+    unsigned long alarm_desc_len = (unsigned long)strlen(alarm_desc_param);
+
+    if (alarm_desc_len >= 255) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "alarm_description too long");
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    bind[0].buffer_type = MYSQL_TYPE_TINY;
+    bind[0].buffer      = (void *)&state_param;
+    bind[0].is_null     = 0;
+
+    bind[1].buffer_type = MYSQL_TYPE_LONG;
+    bind[1].buffer      = (void *)&total_param;
+    bind[1].is_null     = 0;
+
+    bind[2].buffer_type = MYSQL_TYPE_LONG;
+    bind[2].buffer      = (void *)&good_param;
+    bind[2].is_null     = 0;
+
+    bind[3].buffer_type = MYSQL_TYPE_LONG;
+    bind[3].buffer      = (void *)&reject_param;
+    bind[3].is_null     = 0;
+
+    bind[4].buffer_type = MYSQL_TYPE_SHORT;
+    bind[4].buffer      = (void *)&alarm_code_param;
+    bind[4].is_null     = 0;
+
+    bind[5].buffer_type   = MYSQL_TYPE_STRING;
+    bind[5].buffer        = (void *)alarm_desc_param;
+    bind[5].buffer_length = alarm_desc_len;
+    bind[5].length        = &alarm_desc_len;
+    bind[5].is_null       = 0;
+
+    bind[6].buffer_type = MYSQL_TYPE_TINY;
+    bind[6].buffer      = (void *)&alarm_active_param;
+    bind[6].is_null     = 0;
+
+    if (mysql_stmt_bind_param(stmt, bind) != 0) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_bind_param failed: %s",
+                 mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    if (mysql_stmt_execute(stmt) != 0) {
+        snprintf(db->last_error, sizeof(db->last_error),
+                 "mysql_stmt_execute failed: %s",
+                 mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return -1;
+    }
+
+    mysql_stmt_close(stmt);
+    return 0;
+}
