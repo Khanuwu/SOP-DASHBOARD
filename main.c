@@ -42,8 +42,8 @@ int main(void)
 
     time_t hb_age_sec = 0;
     double diff_sec;
-    const int opcua_read_interval_sec = 5;
-    time_t opcua_last_read = 0;
+    const ULONGLONG opcua_read_interval_ms = 200;
+    ULONGLONG opcua_last_read_ms = 0;
 
     /* 1) Cargar configuración */
     if (config_load("config.init", &cfg) != 0) {
@@ -62,17 +62,17 @@ int main(void)
     /* 3) Loop principal */
     while (1) {
 
-        time_t now = time(NULL);
+        ULONGLONG now_ms = GetTickCount64();
 
         /* 3.0 Leer OPC UA cada N segundos */
-        if(now!= (time_t)-1 &&
-           difftime(now, opcua_last_read) >= opcua_read_interval_sec){
-            UA_StatusCode opcua_status = opcua_client_read_temperature();
+        if(now_ms - opcua_last_read_ms >= opcua_read_interval_ms){
+            UA_StatusCode opcua_status = opcua_client_read_alarm();
 
             if(opcua_status != UA_STATUSCODE_GOOD){
                 printf("OPC UA READ ERROR: 0x%08x\n", opcua_status);
+                opcua_client_shutdown();
             }
-            opcua_last_read = now;
+            opcua_last_read_ms = now_ms;
         }
 
         /* 3.1 Actualiza heartbeat propio (este proceso) */
@@ -115,7 +115,7 @@ int main(void)
             db_insert_alarm(&db, 1001, "Heartbeat perdido");
         }
 
-        Sleep(1000);
+        Sleep(100);
     }
 
     /* Nunca llega aquí, pero queda correcto */
